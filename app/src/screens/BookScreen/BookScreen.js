@@ -6,6 +6,8 @@ import Entypo from "@expo/vector-icons/Entypo";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import OrderSubjects from "../../components/OrderSubjects";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { Link } from "expo-router";
 
 export default function BookScreen() {
   const [bookData, setBookData] = useState(null);
@@ -26,7 +28,6 @@ export default function BookScreen() {
         // thèmes
 
         const themes = OrderSubjects(work.subjects);
-        console.log(themes);
 
         let coverUrl = null;
         if (work.covers && work.covers.length > 0) {
@@ -72,6 +73,12 @@ export default function BookScreen() {
   return (
     <ScrollView>
       <View style={styles.container}>
+        <View style={styles.goBack}>
+          <Link href="/">
+            <Ionicons name="chevron-back-outline" size={24} color="black" />
+          </Link>
+        </View>
+
         <View style={styles.livresque}>
           <SimpleLineIcons name="book-open" size={30} color="black" />
         </View>
@@ -161,15 +168,16 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "#FAFAF0",
   },
+  goBack: { alignSelf: "flex-start" },
   livresque: {
     marginVertical: 10,
-    width: 60, 
-    height: 60, 
-    borderRadius: 30, 
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: "white",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000", 
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,

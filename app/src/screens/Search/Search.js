@@ -9,11 +9,16 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import axios from "axios";
 import { Link } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import DropDownPicker from "react-native-dropdown-picker";
+import OrganisationTitle from "../../components/OrganisationSearchRender/OrganisationTitle";
+import OrganisationAuthor from "../../components/OrganisationSearchRender/OrganisationAuthor";
+import OrganisationISBN from "../../components/OrganisationSearchRender/OrganisationISBN";
+import OrganisationSubject from "../../components/OrganisationSearchRender/OrganisationSubject";
 
 export default function Search() {
   const [open, setOpen] = useState(false);
@@ -29,105 +34,172 @@ export default function Search() {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // States spécifiques pour sujet
+  const [books, setBooks] = useState([]);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const limit = 20;
+
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    if (!search.trim()) {
-      setData([]);
-      setIsLoading(false);
-      return;
-    }
+  // Reset des livres quand le search ou type change
+// -----------------------------
+// LOGIQUE PRINCIPALE DE RECHERCHE
+// -----------------------------
+useEffect(() => {
+  // Si champ vide → reset total
+  if (!search.trim()) {
+    setData([]);
+    setBooks([]);
+    setOffset(0);
+    setHasMore(true);
+    setIsLoading(false);
+    return;
+  }
 
-    const fetchData = async () => {
-      setIsLoading(true);
-
-      try {
-        // -----------------------------
-        // TITLE
-        // -----------------------------
-        if (type === "title") {
-          const res = await axios.get(
-            `https://openlibrary.org/search.json?title=${encodeURIComponent(
-              search
-            )}`
-          );
-          setData(res.data.docs || []);
-        }
-
-        // -----------------------------
-        // SUBJECT
-        // -----------------------------
-        else if (type === "subject") {
-          const res = await axios.get(
-            `https://openlibrary.org/subjects/${encodeURIComponent(
-              search
-            )}.json`
-          );
-          setData(res.data.works || []);
-        }
-
-        // -----------------------------
-        // AUTHOR
-        // -----------------------------
-        else if (type === "author") {
-          const resAuthor = await axios.get(
-            `https://openlibrary.org/search/authors.json?q=${encodeURIComponent(
-              search
-            )}`
-          );
-          const author = resAuthor.data?.docs?.[0];
-
-          if (!author) {
-            setData([
-              { name: "No author found", topSubjects: [], numberOfBooks: 0 },
-            ]);
-            setIsLoading(false);
-            return;
-          }
-
-          const authorKey = author.key.replace(/^\/+/, "");
-          const worksRes = await axios.get(
-            `https://openlibrary.org/${authorKey}/works.json`
-          );
-          const numberOfBooks = worksRes.data?.entries?.length || 0;
-
-          setData([
-            {
-              name: author.name,
-              topSubjects: author.top_subjects || [],
-              numberOfBooks,
-              photo: author.photo_id
-                ? `https://covers.openlibrary.org/a/id/${author.photo_id}-M.jpg`
-                : null,
-            },
-          ]);
-        }
-
-        // -----------------------------
-        // ISBN
-        // -----------------------------
-        else if (type === "ISBN") {
-          const res = await axios.get(
-            `https://openlibrary.org/isbn/${search}.json`
-          );
-          setData([res.data]);
-        }
-      } catch (error) {
-        console.error("API Error:", error);
-        setData([]);
+  // -----------------------------
+  // TITLE / AUTHOR / ISBN
+  // -----------------------------
+  const fetchOtherTypes = async () => {
+    setIsLoading(true);
+    try {
+      if (type === "title") {
+        const res = await axios.get(
+          `https://openlibrary.org/search.json?title=${encodeURIComponent(search)}`
+        );
+        setData(res.data.docs || []);
       }
 
-      setIsLoading(false);
-    };
+      else if (type === "author") {
+        const resAuthor = await axios.get(
+          `https://openlibrary.org/search/authors.json?q=${encodeURIComponent(search)}`
+        );
+        const author = resAuthor.data?.docs?.[0];
 
-    fetchData();
-  }, [search, type]);
+        if (!author) {
+          setData([{ name: "No author found", topSubjects: [], numberOfBooks: 0 }]);
+          setIsLoading(false);
+          return;
+        }
+
+        const authorKey = author.key.replace(/^\/+/, "");
+        const worksRes = await axios.get(
+          `https://openlibrary.org/authors/${authorKey}/works.json`
+        );
+        const numberOfBooks = worksRes.data?.size;
+
+        setData([
+          {
+            name: author.name,
+            topSubjects: author.top_subjects || [],
+            numberOfBooks,
+            photo: author.photo_id
+              ? `https://covers.openlibrary.org/a/id/${author.photo_id}-M.jpg`
+              : null,
+          },
+        ]);
+      }
+
+      else if (type === "ISBN") {
+        const ISBNKey = `ISBN:${search}`;
+        const res = await axios.get(
+          `https://openlibrary.org/api/books?bibkeys=${ISBNKey}&format=json&jscmd=data`
+        );
+        const bookKey = Object.keys(res.data)[0];
+        setData(bookKey ? [res.data[bookKey]] : []);
+      }
+
+    } catch (error) {
+      console.error("API Error:", error);
+      setData([]);
+    }
+
+    setIsLoading(false);
+  };
+
+  // -----------------------------
+  // SUBJECT
+  // -----------------------------
+  const fetchSubjectFirstPage = async () => {
+    // Reset avant de charger la première page
+    setBooks([]);
+    setOffset(0);
+    setHasMore(true);
+    setIsLoading(true);
+
+    try {
+      const res = await axios.get(
+        `https://openlibrary.org/subjects/${encodeURIComponent(
+          search
+        )}.json?limit=${limit}&offset=0`
+      );
+
+      setBooks(res.data.works || []);
+      setOffset(limit);
+
+      if ((res.data.works || []).length >= res.data.work_count) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("API Error Subject:", error);
+      setBooks([]);
+    }
+
+    setIsLoading(false);
+  };
+
+  // -----------------------------
+  // CHOIX DU TYPE
+  // -----------------------------
+  if (type === "subject") {
+    fetchSubjectFirstPage();
+  } else {
+    fetchOtherTypes();
+  }
+}, [search, type]);
+
+
+// -----------------------------
+// SCROLL INFINI POUR SUBJECT
+// -----------------------------
+const fetchBooks = async () => {
+  if (!hasMore) return;
+
+  try {
+    setIsLoading(true);
+    const res = await axios.get(
+      `https://openlibrary.org/subjects/${encodeURIComponent(
+        search
+      )}.json?limit=${limit}&offset=${offset}`
+    );
+
+    const newBooks = res.data.works || [];
+    setBooks((prev) => [...prev, ...newBooks]);
+    setOffset((prev) => prev + limit);
+
+    if (books.length + newBooks.length >= res.data.work_count) {
+      setHasMore(false);
+    }
+  } catch (error) {
+    console.error("API Error Subject:", error);
+  }
+
+  setIsLoading(false);
+};
+
+
+  // -----------------------------
+  // FETCH pour sujets (scroll infini)
+  // -----------------------------
 
   const handleOutsidePress = () => {
     Keyboard.dismiss();
     setOpen(false);
   };
 
+  // -----------------------------
+  // Rendu
+  // -----------------------------
   return (
     <TouchableWithoutFeedback onPress={handleOutsidePress}>
       <View style={styles.container}>
@@ -166,17 +238,23 @@ export default function Search() {
           />
         </View>
 
+        {(type !== "subject" || !search) && isLoading && (
+          <ActivityIndicator
+            size="large"
+            color="black"
+            style={{ marginTop: 20 }}
+          />
+        )}
+
         <FlatList
-          data={data}
+          data={type === "subject" ? books : data}
           keyExtractor={(item, index) =>
-            (item.key || item.cover_edition_key || index).toString()
+            (item?.key || item?.cover_edition_key || index).toString()
           }
           renderItem={({ item }) => {
+            // Variables génériques pour Title / Subject
             const title = item.title || "No Title";
-            const authors =
-              item.author_name && item.author_name.length > 0
-                ? item.author_name.join(", ")
-                : "Unknown";
+            const authors = item.author_name?.join(", ") || "Unknown";
             const year = item.first_publish_year || "Unknown";
             const coverUri = item.cover_i
               ? `https://covers.openlibrary.org/b/id/${item.cover_i}-M.jpg`
@@ -184,60 +262,40 @@ export default function Search() {
 
             return (
               <View style={styles.resultItem}>
+                {/* TITLE */}
                 {type === "title" && (
-                  <>
-                    <Text style={styles.title}>{title}</Text>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <View style={{ paddingRight: 5 }}>
-                        <Text>Author: {authors}</Text>
-                        <Text>Year: {year}</Text>
-                      </View>
-                      <Image
-                        source={{ uri: coverUri }}
-                        style={styles.book_picture}
-                      />
-                    </View>
-                  </>
+                  <OrganisationTitle
+                    title={title}
+                    authors={authors}
+                    year={year}
+                    coverUri={coverUri}
+                  />
                 )}
 
-                {type === "author" && (
-                  <>
-                    <Text style={styles.title}>{item.name}</Text>
-                    {item.topSubjects?.length > 0 && (
-                      <View>
-                        <Text>Top Subjects:</Text>
-                        {item.topSubjects.map((subj, index) => (
-                          <Text key={index}>• {subj}</Text>
-                        ))}
-                      </View>
-                    )}
-                    <Text style={{ marginTop: 6 }}>
-                      Number of Books: {item.numberOfBooks}
-                    </Text>
-                  </>
-                )}
+                {/* AUTHOR */}
+                {type === "author" && <OrganisationAuthor item={item} />}
 
-                {type === "subject" && (
-                  <>
-                    <Text style={styles.title}>{title}</Text>
-                    {item.subject && item.subject.length > 0 && (
-                      <Text>Subject: {item.subject.join(", ")}</Text>
-                    )}
-                    {authors !== "Unknown" && <Text>Author: {authors}</Text>}
-                    {year !== "Unknown" && <Text>Year: {year}</Text>}
-                  </>
-                )}
+                {/* ISBN */}
+                {type === "ISBN" && item && <OrganisationISBN item={item} />}
+
+                {/* SUBJECT */}
+                {type === "subject" && <OrganisationSubject item={item} />}
               </View>
             );
           }}
+          onEndReached={type === "subject" ? fetchBooks : null}
+          onEndReachedThreshold={0.5}
           contentContainerStyle={{ paddingBottom: 120 }}
           style={{ marginTop: 12 }}
         />
+
+        {isLoading && type === "subject" && (
+          <ActivityIndicator
+            size="large"
+            color="black"
+            style={{ marginTop: 20 }}
+          />
+        )}
       </View>
     </TouchableWithoutFeedback>
   );

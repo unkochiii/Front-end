@@ -15,10 +15,10 @@ import axios from "axios";
 import { Link } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import DropDownPicker from "react-native-dropdown-picker";
-import OrganisationTitle from "../../components/OrganisationSearchRender/OrganisationTitle";
-import OrganisationAuthor from "../../components/OrganisationSearchRender/OrganisationAuthor";
-import OrganisationISBN from "../../components/OrganisationSearchRender/OrganisationISBN";
-import OrganisationSubject from "../../components/OrganisationSearchRender/OrganisationSubject";
+import OrganisationTitle from "../../../../components/OrganisationSearchRender/OrganisationTitle";
+import OrganisationAuthor from "../../../../components/OrganisationSearchRender/OrganisationAuthor";
+import OrganisationISBN from "../../../../components/OrganisationSearchRender/OrganisationISBN";
+import OrganisationSubject from "../../../../components/OrganisationSearchRender/OrganisationSubject";
 
 export default function Search() {
   const [open, setOpen] = useState(false);

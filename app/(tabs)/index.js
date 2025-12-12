@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { StyleSheet, View, SafeAreaView, TouchableOpacity, Text } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { MOCK_BOOKS } from '../../../constants/book';
-import BookCard from '../../components/BookCard';
+import { MOCK_BOOKS } from '../../../../constants/book';
+import BookCard from '../../../../components/BookCard';
 
 export default function App() {
     const [isMasked, setIsMasked] = useState(false);

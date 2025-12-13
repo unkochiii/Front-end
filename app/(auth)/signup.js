@@ -1,1 +1,8 @@
-export { default } from '../src/auth/signup';
+// app/(auth)/signup.js
+export default function SignUpScreen() {
+  return (
+    <View>
+      <Text>Sign Up</Text>
+    </View>
+  );
+}

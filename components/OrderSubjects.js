@@ -79,4 +79,4 @@ const OrderSubjects = (tab) => {
   return result; //retourne un tableau avec les différents thèmes avec leur couleur associée
 };
 
-export default OrderSubjects;
+export default OrderSubjects

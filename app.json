@@ -30,7 +30,8 @@
           "project": "react-native",
           "organization": "en2versv0"
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }

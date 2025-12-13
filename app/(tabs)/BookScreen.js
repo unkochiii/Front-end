@@ -5,7 +5,7 @@ import StarRating from "react-native-star-rating-widget";
 import Entypo from "@expo/vector-icons/Entypo";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
-import OrderSubjects from "../../../../components/OrderSubjects";
+import OrderSubjects from "../../components/OrderSubjects";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Link } from "expo-router";
 

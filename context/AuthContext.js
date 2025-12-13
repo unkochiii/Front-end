@@ -2,7 +2,6 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import api, { getUserProfile } from '../services/api';
-
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {

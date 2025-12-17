@@ -343,40 +343,40 @@ export default function Search() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 16, backgroundColor: "#FAFAF0" ,paddingTop: 70,},
-    header: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-    headerTitle: { fontSize: 18, marginLeft: 8, fontWeight: "600" },
+    container: { flex: 1, padding: 20, backgroundColor: "#FFFFFF", paddingTop: 70 },
+    header: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+    headerTitle: { fontSize: 28, marginLeft: 12, fontWeight: "800", color: "#000", letterSpacing: -0.5 },
 
-    row: { flexDirection: "row", alignItems: "center", gap: 10 },
+    row: { flexDirection: "row", alignItems: "center", gap: 12 },
 
     dropdownContainer: {
         width: 120,
         ...Platform.select({ ios: { zIndex: 3000 }, android: {} }),
     },
     dropdown: {
-        borderColor: "#ccc",
-        height: 44,
+        borderWidth: 0,
+        backgroundColor: "#F8F8F8",
+        height: 48,
         justifyContent: "center",
-        backgroundColor: "white",
+        borderRadius: 16,
     },
-    dropDownContainerStyle: { borderColor: "#ccc", backgroundColor: "white" },
+    dropDownContainerStyle: { borderColor: "#F0F0F0", backgroundColor: "#FAFAFA", borderRadius: 12 },
 
     searchInput: {
         flex: 1,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        height: 44,
-        paddingHorizontal: 12,
-        borderRadius: 6,
-        backgroundColor: "white",
+        borderWidth: 0,
+        backgroundColor: "#F8F8F8",
+        height: 48,
+        paddingHorizontal: 16,
+        borderRadius: 16,
+        fontSize: 16,
+        color: "#000",
     },
 
     resultItem: {
-        padding: 12,
-        borderBottomWidth: 1,
-        borderColor: "#DDD",
-        backgroundColor: "white",
-        borderRadius: 10,
-        marginBottom: 10,
+        padding: 16,
+        backgroundColor: "#FAFAFA",
+        borderRadius: 16,
+        marginBottom: 12,
     },
 });

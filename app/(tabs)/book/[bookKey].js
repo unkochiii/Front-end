@@ -46,13 +46,17 @@ export default function BookScreen() {
                     `https://openlibrary.org/works/${workId}.json`
                 );
 
-                // Backend (token auto via api)
-                const [statsRes, reviewsRes, excerptsRes, deepRes] = await Promise.all([
+                // Backend (token auto via api) - graceful degradation on failures
+                const backendCalls = await Promise.allSettled([
                     api.get(`/reviews/book/${encodeURIComponent(bookKey)}/stats`),
                     api.get(`/reviews/book?bookKey=${encodeURIComponent(bookKey)}`),
                     api.get(`/excerpt/book/${encodeURIComponent(bookKey)}`),
                     api.get(`/deepdive/book/${encodeURIComponent(bookKey)}`),
                 ]);
+
+                const [statsRes, reviewsRes, excerptsRes, deepRes] = backendCalls.map(
+                    (result) => (result.status === 'fulfilled' ? result.value : null)
+                );
 
                 // Authors
                 const authors = [];
@@ -77,12 +81,12 @@ export default function BookScreen() {
                     coverUrl: workRes.data.covers?.length
                         ? `https://covers.openlibrary.org/b/id/${workRes.data.covers[0]}-L.jpg`
                         : null,
-                    reviews: reviewsRes.data.reviews || [],
-                    excerpts: excerptsRes.data.data || [],
-                    deepDives: deepRes.data.data || [],
+                    reviews: reviewsRes?.data?.reviews || [],
+                    excerpts: excerptsRes?.data?.data || [],
+                    deepDives: deepRes?.data?.data || [],
                 });
 
-                setRating(statsRes.data.averageRating || 0);
+                setRating(statsRes?.data?.averageRating || 0);
             } catch (e) {
                 console.error("Book fetch error:", e.message);
                 if (mounted) {
@@ -164,54 +168,6 @@ export default function BookScreen() {
         );
     }
 
-    if (error) {
-        return (
-            <View style={styles.container}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.goBack}>
-                    <Ionicons name="chevron-back-outline" size={24} />
-                </TouchableOpacity>
-                <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>{error}</Text>
-                    <TouchableOpacity onPress={() => { setError(null); setLoading(true); }} style={styles.retryButton}>
-                        <Text style={styles.retryButtonText}>Retry</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        );
-    }
-
-    if (!bookData) {
-        return (
-            <View style={styles.container}>
-                <Text>No data available</Text>
-            </View>
-        );
-    }
-
-    if (error) {
-        return (
-            <View style={styles.container}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.goBack}>
-                    <Ionicons name="chevron-back-outline" size={24} />
-                </TouchableOpacity>
-                <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>{error}</Text>
-                    <TouchableOpacity onPress={() => { setError(null); setLoading(true); }} style={styles.retryButton}>
-                        <Text style={styles.retryButtonText}>Retry</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        );
-    }
-
-    if (!bookData) {
-        return (
-            <View style={styles.container}>
-                <Text>No data available</Text>
-            </View>
-        );
-    }
-
     return (
         <ScrollView ref={scrollRef}>
             <View style={styles.container}>
@@ -220,7 +176,7 @@ export default function BookScreen() {
                 </TouchableOpacity>
 
                 <View style={styles.livresque}>
-                    <SimpleLineIcons name="book-open" size={30} />
+                    <SimpleLineIcons name="book-open" size={30} color="white" />
                 </View>
 
                 {bookData.coverUrl && (
@@ -260,68 +216,86 @@ export default function BookScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { padding: 12, backgroundColor: "#FAFAF0" },
-    goBack: { marginBottom: 10, width: 40 },
+    container: { padding: 20, backgroundColor: "#FFFFFF" },
+    goBack: { marginBottom: 16, width: 48, height: 48, borderRadius: 24, backgroundColor: "#F8F8F8", justifyContent: "center", alignItems: "center" },
     livresque: {
         alignSelf: "center",
-        marginBottom: 10,
-        backgroundColor: "white",
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        marginBottom: 20,
+        backgroundColor: "#FF6B6B",
+        width: 70,
+        height: 70,
+        borderRadius: 35,
         justifyContent: "center",
         alignItems: "center",
-        elevation: 5,
+        shadowColor: "#FF6B6B",
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 8,
     },
     book_picture: {
-        width: 200,
-        height: 300,
+        width: 220,
+        height: 320,
         alignSelf: "center",
-        borderRadius: 10,
-        marginBottom: 10,
+        borderRadius: 16,
+        marginBottom: 20,
+        shadowColor: "#000",
+        shadowOpacity: 0.15,
+        shadowRadius: 25,
+        shadowOffset: { width: 0, height: 12 },
+        elevation: 10,
     },
-    title: { fontSize: 22, fontWeight: "bold", textAlign: "center" },
-    author: { textAlign: "center", fontSize: 12, marginBottom: 10 },
+    title: { fontSize: 28, fontWeight: "800", textAlign: "center", color: "#000", letterSpacing: -0.5, paddingHorizontal: 20 },
+    author: { textAlign: "center", fontSize: 16, marginBottom: 16, marginTop: 8, color: "#999", fontWeight: "600" },
     rate: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        gap: 10,
-        marginBottom: 10,
+        gap: 12,
+        marginBottom: 20,
     },
     sectionRatingUser: {
-        marginBottom: 20,
-        borderTopWidth: 1,
-        borderColor: "#ddd",
-        paddingTop: 10,
+        marginBottom: 24,
+        backgroundColor: "#F8F8F8",
+        borderRadius: 20,
+        padding: 20,
         alignItems: "center",
     },
     TitleRating: {
         textAlign: "center",
-        fontSize: 12,
-        fontWeight: "bold",
-        marginBottom: 5,
+        fontSize: 16,
+        fontWeight: "800",
+        marginBottom: 12,
+        color: "#000",
     },
     validateButton: {
         alignSelf: "center",
-        backgroundColor: "#000",
+        backgroundColor: "#FF6B6B",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 20,
-        marginTop: 7,
-        width: 80,
-        height: 28,
+        borderRadius: 25,
+        marginTop: 12,
+        paddingHorizontal: 32,
+        height: 50,
+        shadowColor: "#FF6B6B",
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 8,
     },
     validateButtonText: {
         color: "white",
-        fontWeight: "bold",
-        fontSize: 12,
+        fontWeight: "800",
+        fontSize: 16,
+        letterSpacing: 0.5,
     },
     description: {
-        textAlign: "center",
-        fontSize: 13,
-        marginBottom: 20,
-        lineHeight: 18,
+        textAlign: "left",
+        fontSize: 16,
+        marginBottom: 24,
+        lineHeight: 24,
+        color: "#666",
+        paddingHorizontal: 4,
     },
     errorContainer: {
         flex: 1,
@@ -331,19 +305,26 @@ const styles = StyleSheet.create({
     },
     errorText: {
         textAlign: "center",
-        color: "#C0392B",
-        fontSize: 14,
-        marginBottom: 20,
+        color: "#FF6B6B",
+        fontSize: 16,
+        marginBottom: 24,
+        fontWeight: "600",
     },
     retryButton: {
-        backgroundColor: "#000",
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 20,
+        backgroundColor: "#FF6B6B",
+        paddingHorizontal: 32,
+        paddingVertical: 16,
+        borderRadius: 30,
+        shadowColor: "#FF6B6B",
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 8,
     },
     retryButtonText: {
         color: "white",
-        fontWeight: "bold",
-        fontSize: 14,
+        fontWeight: "800",
+        fontSize: 16,
+        letterSpacing: 0.5,
     },
 });

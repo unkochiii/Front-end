@@ -6,6 +6,7 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useRouter } from "expo-router";
@@ -16,41 +17,56 @@ import { useAuth } from "../../../context/AuthContext";
 export default function EditProfile() {
   const router = useRouter();
   const { user, token } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [openName, setOpenName] = useState(false);
-  const [name, setName] = useState("");
-  const [openBio, setOpenBio] = useState(false);
-  const [bio, setBio] = useState("");
 
   const BACKEND_URL = "https://site--en2versv0-backend--ftkq8hkxyc7l.code.run";
+
+  const [loading, setLoading] = useState(false);
+  const [openForm, setOpenForm] = useState(false);
+
+  // USER INFO
+  const [fullname, setFullname] = useState("");
+  const [email, setEmail] = useState("");
+  const [description, setDescription] = useState("");
+
+  const [firstBookTitle, setFirstBookTitle] = useState("");
+  const [firstBookAuthor, setFirstBookAuthor] = useState("");
+  const [secondBookTitle, setSecondBookTitle] = useState("");
+  const [secondBookAuthor, setSecondBookAuthor] = useState("");
+
+  const [firstStyle, setFirstStyle] = useState("");
+  const [secondStyle, setSecondStyle] = useState("");
+  const [thirdStyle, setThirdStyle] = useState("");
+
+  const [birth, setBirth] = useState("");
+  const [genre, setGenre] = useState("");
+  const [country, setCountry] = useState("");
+  const [city, setCity] = useState("");
 
   if (!user) {
     return (
       <View style={styles.loaderContainer}>
-        <Text>Loading user...</Text>
+        <ActivityIndicator size="large" />
       </View>
     );
   }
 
-  // Avatar picker
+  /* ===================== AVATAR ===================== */
+
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
     });
+
     if (!result.canceled) {
       uploadAvatar(result.assets[0]);
     }
   };
 
   const uploadAvatar = async (image) => {
-    if (!user || !token) {
-      Alert.alert("Error", "User not authenticated!");
-      return;
-    }
-
     try {
       setLoading(true);
+
       const formData = new FormData();
       formData.append("image", {
         uri: image.uri,
@@ -60,81 +76,209 @@ export default function EditProfile() {
 
       const response = await fetch(`${BACKEND_URL}/user/avatar/${user._id}`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
       const data = await response.json();
       setLoading(false);
 
-      if (response.ok) {
-        Alert.alert("Success", "Avatar updated successfully!");
-      } else {
-        Alert.alert("Error", data.message || "Failed to upload avatar");
+      if (!response.ok) {
+        Alert.alert("Error", data.message);
+        return;
       }
+
+      Alert.alert("Success", "Avatar updated !");
     } catch (error) {
       setLoading(false);
-      console.log(error);
-      Alert.alert("Error", "Something went wrong while uploading avatar");
+      Alert.alert("Error", "Avatar upload failed");
     }
   };
 
+  /* ===================== UPDATE PROFILE ===================== */
+
+  const updateProfile = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch(`${BACKEND_URL}/user/${user._id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json", // type de format envoyé
+        },
+        body: JSON.stringify({
+          fullname,
+          email,
+          description,
+          firstBookTitle,
+          firstBookAuthor,
+          secondBookTitle,
+          secondBookAuthor,
+          firstStyle,
+          secondStyle,
+          thirdStyle,
+          birth,
+          genre,
+          country,
+          city,
+        }),
+      });
+
+      const data = await response.json();
+      setLoading(false);
+
+      if (!response.ok) {
+        Alert.alert("Error", data.message);
+        return;
+      }
+
+      Alert.alert("Success", "Profile updated successfully!");
+      setOpenForm(false);
+    } catch (error) {
+      setLoading(false);
+      Alert.alert("Error", "Update failed");
+    }
+  };
+
+  /* ===================== UI ===================== */
+
   return (
-    <View style={styles.container}>
-      {/* Go Back */}
+    <ScrollView style={styles.container}>
+      {/* BACK */}
       <TouchableOpacity onPress={() => router.back()} style={styles.goBack}>
         <Entypo name="chevron-left" size={28} color="#333" />
       </TouchableOpacity>
 
       <Text style={styles.title}>Edit Profile</Text>
 
-      {/* Bio */}
+      {/* OPEN FORM */}
       <TouchableOpacity
         style={styles.card}
-        onPress={() => setOpenBio(!openBio)}
+        onPress={() => setOpenForm(!openForm)}
       >
-        <Text style={styles.cardText}>Change your bio</Text>
+        <Text style={styles.cardText}>
+          {openForm ? "Close profile editor" : "Edit profile information"}
+        </Text>
       </TouchableOpacity>
-      {openBio && (
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your new bio"
-          value={bio}
-          onChangeText={setBio}
-        />
+
+      {openForm && (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Full name"
+            value={fullname}
+            onChangeText={setFullname}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Description"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Favorite book #1 title"
+            value={firstBookTitle}
+            onChangeText={setFirstBookTitle}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Favorite book #1 author"
+            value={firstBookAuthor}
+            onChangeText={setFirstBookAuthor}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Favorite book #2 title"
+            value={secondBookTitle}
+            onChangeText={setSecondBookTitle}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Favorite book #2 author"
+            value={secondBookAuthor}
+            onChangeText={setSecondBookAuthor}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Style 1"
+            value={firstStyle}
+            onChangeText={setFirstStyle}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Style 2"
+            value={secondStyle}
+            onChangeText={setSecondStyle}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Style 3"
+            value={thirdStyle}
+            onChangeText={setThirdStyle}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Birth year"
+            value={birth}
+            onChangeText={setBirth}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Genre"
+            value={genre}
+            onChangeText={setGenre}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Country"
+            value={country}
+            onChangeText={setCountry}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="City"
+            value={city}
+            onChangeText={setCity}
+          />
+
+          <TouchableOpacity style={styles.saveBtn} onPress={updateProfile}>
+            {loading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.saveText}>Save changes</Text>
+            )}
+          </TouchableOpacity>
+        </>
       )}
 
-      {/* Name */}
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => setOpenName(!openName)}
-      >
-        <Text style={styles.cardText}>Change your name</Text>
-      </TouchableOpacity>
-      {openName && (
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your new name"
-          value={name}
-          onChangeText={setName}
-        />
-      )}
-
-      {/* Avatar */}
+      {/* AVATAR */}
       <TouchableOpacity
         style={[styles.card, loading && { opacity: 0.6 }]}
         onPress={pickImage}
         disabled={loading}
       >
-        {loading ? (
-          <ActivityIndicator color="#555" />
-        ) : (
-          <Text style={styles.cardText}>Change your avatar</Text>
-        )}
+        <Text style={styles.cardText}>Change avatar</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
+
+/* ===================== STYLES ===================== */
 
 const styles = StyleSheet.create({
   container: {
@@ -149,10 +293,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   goBack: {
-    position: "absolute",
-    top: 40,
-    left: 20,
-    zIndex: 10,
+    
+    
   },
   title: {
     fontSize: 26,
@@ -165,12 +307,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     paddingVertical: 18,
     paddingHorizontal: 20,
-    borderRadius: 15,
+    borderRadius: 14,
     marginBottom: 15,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 6,
     elevation: 3,
   },
   cardText: {
@@ -181,17 +319,21 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#FFF",
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginVertical:20,
-    fontSize: 15,
-    marginTop: 10,
+    padding: 14,
+    marginVertical: 8,
     borderWidth: 1,
     borderColor: "#DDD",
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+  },
+  saveBtn: {
+    backgroundColor: "#333",
+    paddingVertical: 16,
+    borderRadius: 14,
+    marginTop: 20,
+    alignItems: "center",
+  },
+  saveText: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: 16,
   },
 });
